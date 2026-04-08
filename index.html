@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<!-- saved from url=(0045)file:///C:/Users/Admin/Downloads/index_8.html -->
+<!-- saved from url=(0045)file:///C:/Users/Admin/Downloads/index_1.html -->
 <html lang="he" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>קוויזי — משחק חידות אינטרקטיבי</title>
 
 <!-- Firebase -->
-<script src="./index_files/firebase-app-compat.js.הורדה"></script>
-<script src="./index_files/firebase-database-compat.js.הורדה"></script>
+<script src="./קוויזי — משחק חידות אינטרקטיבי_files/firebase-app-compat.js.הורדה"></script>
+<script src="./קוויזי — משחק חידות אינטרקטיבי_files/firebase-database-compat.js.הורדה"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com/">
-<link href="./index_files/css2" rel="stylesheet">
+<link href="./קוויזי — משחק חידות אינטרקטיבי_files/css2" rel="stylesheet">
 
 <style>
 :root {
@@ -930,9 +930,12 @@ async function joinGame() {
 
     await gameRef.child('players/' + name).set({ name });
 
-    gameRef.child('phase').on('value', snap => {
-      const phase = snap.val();
-      if (phase === 'question') loadPlayerQuestion();
+    // Listen for game state changes
+    gameRef.on('value', snap => {
+      const game = snap.val();
+      if (!game) return;
+      const phase = game.phase;
+      if (phase === 'question') loadPlayerQuestionFromSnap(game);
       if (phase === 'reveal') showPlayerReveal();
       if (phase === 'final') showFinalForPlayer();
     });
@@ -941,6 +944,11 @@ async function joinGame() {
       const pts = snap.val() || 0;
       S.playerScore = pts;
       document.getElementById('p-pts').textContent = pts.toLocaleString();
+    });
+
+    // Cache questions locally for answer validation
+    gameRef.child('questions').once('value', snap => {
+      if (snap.val()) S.questions = snap.val();
     });
   }
 
@@ -1006,13 +1014,25 @@ async function loadPlayerQuestion() {
   if (!db || !gameRef) return;
   const snap = await gameRef.once('value');
   const game = snap.val();
+  if (game) loadPlayerQuestionFromSnap(game);
+}
+
+function loadPlayerQuestionFromSnap(game) {
   if (!game || game.phase !== 'question') return;
 
   const q = game.questions[game.currentQ];
   if (!q) return;
+  
+  // Don't reload if same question and already answered
+  if (S.currentQ === game.currentQ && S.playerAnswered) return;
+  
+  const isNewQuestion = S.currentQ !== game.currentQ;
   S.currentQ = game.currentQ;
   S.timePerQ = game.timePerQ;
-  S.playerAnswered = false;
+  
+  if (isNewQuestion) {
+    S.playerAnswered = false;
+  }
 
   document.getElementById('p-q-num').textContent = game.currentQ + 1;
   document.getElementById('p-q-text').textContent = q.q;
@@ -1024,14 +1044,14 @@ async function loadPlayerQuestion() {
   document.getElementById('p-answered-view').style.display = 'none';
   document.getElementById('p-question-view').style.display = 'block';
 
-  startTimer('player');
+  if (isNewQuestion) startTimer('player');
 }
 
 function playerAnswer(idx, btn) {
   if (S.playerAnswered) return;
   S.playerAnswered = true;
 
-  const q = S.questions[S.currentQ] || (db ? null : S.questions[S.currentQ]);
+  const q = S.questions[S.currentQ] || null;
 
   document.querySelectorAll('#p-answers .ans-btn').forEach(b => { b.disabled = true; b.classList.add('dim'); });
   btn.classList.remove('dim');
