@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<!-- saved from url=(0045)file:///C:/Users/Admin/Downloads/index_8.html -->
+<html lang="he" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קוויזי — משחק חידות אינטרקטיבי</title>
+
+<!-- Firebase -->
+<script src="./index_files/firebase-app-compat.js.הורדה"></script>
+<script src="./index_files/firebase-database-compat.js.הורדה"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link href="./index_files/css2" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #0f0e17;
+  --surface: #1a1928;
+  --surface2: #222136;
+  --border: rgba(255,255,255,0.08);
+  --purple: #7c6fff;
+  --purple-dim: rgba(124,111,255,0.15);
+  --orange: #ff6b35;
+  --green: #00d4aa;
+  --pink: #ff4d8f;
+  --yellow: #ffd166;
+  --text: #f0eefc;
+  --text2: #9490b8;
+  --radius: 16px;
+  --r-sm: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Rubik', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  direction: rtl;
+  overflow-x: hidden;
+}
+
+/* Animated background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(124,111,255,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 80%, rgba(255,77,143,0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 1.5rem 1rem; min-height: 100vh; }
+
+/* ========= SCREENS ========= */
+.screen { display: none; animation: fadeUp 0.35s ease; }
+.screen.active { display: block; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+
+/* ========= TYPOGRAPHY ========= */
+h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); font-weight: 900; line-height: 1.1; }
+h2 { font-size: 1.4rem; font-weight: 700; }
+h3 { font-size: 1.1rem; font-weight: 500; }
+
+/* ========= HOME SCREEN ========= */
+.home-logo {
+  text-align: center;
+  padding: 2.5rem 0 2rem;
+}
+.logo-text {
+  font-size: clamp(2.4rem, 8vw, 3.5rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 60%, var(--orange) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -1px;
+}
+.logo-sub { font-size: 1.1rem; font-weight: 700; margin-top: 6px; font-family: 'Rubik', sans-serif; background: linear-gradient(90deg, var(--green) 0%, var(--yellow) 50%, var(--orange) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: 1px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: 'Rubik', sans-serif;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+  text-align: center;
+}
+.input-field:focus { border-color: var(--purple); }
+.input-field::placeholder { color: var(--text2); }
+
+.input-code {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 6px;
+  text-align: center;
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--r-sm);
+  font-family: 'Rubik', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, filter 0.2s;
+  text-align: center;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--purple); color: white; }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--purple); }
+.btn-orange { background: var(--orange); color: white; }
+.btn-green { background: var(--green); color: #0f0e17; }
+.btn-danger { background: var(--pink); color: white; }
+
+.divider { text-align: center; color: var(--text2); font-size: 0.8rem; margin: 0.75rem 0; }
+
+/* ========= ADMIN SETUP ========= */
+.section-label { font-size: 0.75rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+
+.chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 8px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chip:hover { border-color: var(--purple); }
+.chip.active { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); font-weight: 700; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+.topic-card {
+  padding: 12px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+}
+.topic-card .topic-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+.topic-card:hover { border-color: var(--purple); transform: translateY(-1px); }
+.topic-card.active { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); font-weight: 700; }
+
+/* ========= GENERATING ========= */
+.gen-center { text-align: center; padding: 4rem 1rem; }
+.spinner {
+  width: 48px; height: 48px;
+  border: 3px solid var(--border);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 1.5rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.gen-dots span { display: inline-block; animation: dot 1.4s infinite; font-size: 1.5rem; }
+.gen-dots span:nth-child(2) { animation-delay: 0.2s; }
+.gen-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dot { 0%,80%,100% { opacity:0.2; transform:scale(0.8); } 40% { opacity:1; transform:scale(1); } }
+
+/* ========= LOBBY ========= */
+.code-display {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(2.5rem, 10vw, 4rem);
+  font-weight: 700;
+  color: var(--purple);
+  text-align: center;
+  letter-spacing: 8px;
+  padding: 1rem 0;
+  text-shadow: 0 0 30px rgba(124,111,255,0.4);
+}
+
+.player-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; }
+.player-chip {
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.player-chip:nth-child(3n+1) { background: rgba(124,111,255,0.2); color: var(--purple); border: 1px solid rgba(124,111,255,0.3); }
+.player-chip:nth-child(3n+2) { background: rgba(255,77,143,0.15); color: var(--pink); border: 1px solid rgba(255,77,143,0.25); }
+.player-chip:nth-child(3n+3) { background: rgba(0,212,170,0.15); color: var(--green); border: 1px solid rgba(0,212,170,0.25); }
+
+/* ========= QUESTION SCREEN ========= */
+.q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.q-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--text2);
+}
+
+.timer-ring-wrap { position: relative; width: 56px; height: 56px; }
+.timer-ring svg { transform: rotate(-90deg); }
+.timer-ring circle { fill: none; stroke-width: 4; }
+.timer-ring .track { stroke: var(--surface2); }
+.timer-ring .progress { stroke: var(--purple); stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+.timer-num {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700; font-size: 1rem;
+}
+
+.timer-bar-wrap { height: 4px; background: var(--surface2); border-radius: 2px; margin-bottom: 1.25rem; overflow: hidden; }
+.timer-bar { height: 100%; background: var(--purple); transition: width 1s linear, background 0.3s; border-radius: 2px; }
+
+.q-text-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  font-size: clamp(1rem, 3.5vw, 1.2rem);
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.media-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+.media-box iframe { width: 100%; height: 220px; border: none; border-radius: 10px; }
+.music-hint {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: rgba(124,111,255,0.1);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text2);
+}
+.music-note-anim { font-size: 1.2rem; animation: bounce 0.6s infinite alternate; }
+@keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+
+.answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ans-btn {
+  padding: 18px 12px;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Rubik', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: white;
+  text-align: center;
+  transition: transform 0.1s, filter 0.15s, opacity 0.3s;
+  line-height: 1.3;
+  position: relative;
+  overflow: hidden;
+}
+.ans-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: white;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.ans-btn:hover:not(:disabled) { transform: scale(1.02); filter: brightness(1.1); }
+.ans-btn:active:not(:disabled)::after { opacity: 0.15; }
+.ans-btn:disabled { cursor: default; }
+.ans-btn.dim { opacity: 0.35; transform: scale(0.97); }
+.ans-btn.correct-reveal { animation: correctPop 0.5s ease; }
+.ans-btn.selected-ans { box-shadow: 0 0 0 3px white, 0 0 0 5px currentColor; }
+@keyframes correctPop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+
+.ans-btn:nth-child(1) { background: #6c63ff; }
+.ans-btn:nth-child(2) { background: #ff5757; }
+.ans-btn:nth-child(3) { background: #00bfa5; }
+.ans-btn:nth-child(4) { background: #ff9f43; }
+
+/* live answers counter */
+.live-stats { display: flex; align-items: center; gap: 8px; margin-top: 1rem; font-size: 0.8rem; color: var(--text2); }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ========= REVEAL ========= */
+.reveal-answer {
+  background: rgba(0,212,170,0.12);
+  border: 1px solid rgba(0,212,170,0.3);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--green);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.result-bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 1rem; }
+.result-bar-col { text-align: center; }
+.result-bar-wrap { height: 80px; background: var(--surface2); border-radius: 6px 6px 0 0; display: flex; align-items: flex-end; overflow: hidden; margin-bottom: 4px; }
+.result-bar-fill { width: 100%; transition: height 0.6s cubic-bezier(0.34, 1.3, 0.64, 1); border-radius: 4px 4px 0 0; }
+.result-bar-pct { font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; }
+
+/* ========= PLAYER SCREEN ========= */
+.player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.player-name-tag { font-size: 0.9rem; font-weight: 700; padding: 6px 14px; background: var(--purple-dim); border: 1px solid rgba(124,111,255,0.3); border-radius: 20px; color: var(--purple); }
+.player-pts-tag { font-family: 'Space Mono', monospace; font-size: 0.9rem; font-weight: 700; color: var(--yellow); }
+
+.waiting-screen { text-align: center; padding: 3rem 1rem; }
+.waiting-icon { font-size: 3rem; margin-bottom: 1rem; animation: float 2s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+.result-overlay { text-align: center; padding: 2rem 1rem; animation: fadeUp 0.3s ease; }
+.result-big { font-size: 4rem; margin-bottom: 0.5rem; }
+.result-status { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; }
+.result-pts { font-size: 2.5rem; font-weight: 900; color: var(--yellow); font-family: 'Space Mono', monospace; }
+
+/* ========= SCOREBOARD ========= */
+.score-item { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); transition: all 0.3s; }
+.score-item:nth-child(1) { background: rgba(255,209,102,0.08); border-color: rgba(255,209,102,0.25); }
+.score-item:nth-child(2) { background: rgba(200,200,200,0.06); border-color: rgba(200,200,200,0.2); }
+.score-item:nth-child(3) { background: rgba(205,127,50,0.06); border-color: rgba(205,127,50,0.2); }
+.score-rank { font-size: 1.3rem; min-width: 32px; }
+.score-name { flex: 1; font-size: 0.95rem; font-weight: 500; }
+.score-pts-val { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 1rem; color: var(--purple); }
+
+/* ========= FINAL ========= */
+.podium { display: flex; justify-content: center; align-items: flex-end; gap: 8px; margin: 2rem 0; }
+.podium-slot { text-align: center; }
+.podium-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin: 0 auto 6px; }
+.podium-name { font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; }
+.podium-bar { border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700; }
+.podium-bar.p1 { background: linear-gradient(180deg, var(--yellow), #e6a800); width: 90px; height: 90px; color: #0f0e17; }
+.podium-bar.p2 { background: linear-gradient(180deg, #c0c0c0, #888); width: 80px; height: 70px; color: #0f0e17; }
+.podium-bar.p3 { background: linear-gradient(180deg, #cd7f32, #a05a20); width: 75px; height: 55px; color: white; }
+
+/* ========= NAV/BACK ========= */
+.back-btn { background: none; border: none; cursor: pointer; color: var(--text2); font-size: 0.85rem; margin-bottom: 1rem; padding: 4px 0; display: flex; align-items: center; gap: 6px; font-family: 'Rubik', sans-serif; }
+.back-btn:hover { color: var(--text); }
+
+/* ========= CONFIG MODAL ========= */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: none; align-items: center; justify-content: center; }
+.modal-backdrop.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; width: 90%; max-width: 380px; animation: fadeUp 0.25s ease; }
+.modal h3 { margin-bottom: 1rem; }
+.modal .input-field { margin-bottom: 10px; text-align: right; }
+.modal-label { font-size: 0.8rem; color: var(--text2); margin-bottom: 6px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 1rem; }
+
+/* ========= TOAST ========= */
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(0); background: var(--surface); border: 1px solid var(--border); border-radius: 30px; padding: 10px 20px; font-size: 0.9rem; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; }
+
+/* Mobile fix */
+@media (max-width: 400px) {
+  .answers-grid { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+/* ===== AUDIO PLAYER ===== */
+.audio-player {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 1.25rem 1rem;
+  background: linear-gradient(135deg, rgba(124,111,255,0.12), rgba(255,77,143,0.08));
+  border-radius: var(--radius);
+  border: 1px solid rgba(124,111,255,0.3);
+}
+.audio-waveform { display: flex; align-items: flex-end; gap: 3px; height: 44px; }
+.audio-waveform .bar {
+  width: 5px; border-radius: 3px; background: var(--purple);
+  animation: wavebar 0.7s ease-in-out infinite alternate;
+}
+.audio-waveform .bar:nth-child(1){height:10px;animation-delay:0s}
+.audio-waveform .bar:nth-child(2){height:22px;animation-delay:0.1s}
+.audio-waveform .bar:nth-child(3){height:36px;animation-delay:0.2s}
+.audio-waveform .bar:nth-child(4){height:28px;animation-delay:0.05s}
+.audio-waveform .bar:nth-child(5){height:44px;animation-delay:0.15s}
+.audio-waveform .bar:nth-child(6){height:32px;animation-delay:0.25s}
+.audio-waveform .bar:nth-child(7){height:20px;animation-delay:0.08s}
+.audio-waveform .bar:nth-child(8){height:38px;animation-delay:0.18s}
+.audio-waveform .bar:nth-child(9){height:26px;animation-delay:0.12s}
+.audio-waveform .bar:nth-child(10){height:14px;animation-delay:0.22s}
+.audio-waveform .bar:nth-child(11){height:30px;animation-delay:0.06s}
+.audio-waveform .bar:nth-child(12){height:18px;animation-delay:0.16s}
+@keyframes wavebar { from{opacity:0.35;transform:scaleY(0.5)} to{opacity:1;transform:scaleY(1)} }
+.audio-waveform.paused .bar { animation-play-state: paused; opacity: 0.25; }
+.audio-row { display: flex; align-items: center; gap: 12px; width: 100%; }
+.audio-play-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--purple); border: none; cursor: pointer;
+  font-size: 1.2rem; transition: transform 0.12s, filter 0.12s; flex-shrink:0;
+}
+.audio-play-btn:hover { transform: scale(1.08); filter: brightness(1.15); }
+.audio-play-btn.playing { background: var(--pink); }
+.audio-progress-wrap {
+  flex:1; height:5px; background:rgba(255,255,255,0.1);
+  border-radius:3px; cursor:pointer; overflow:hidden;
+}
+.audio-progress-fill { height:100%; background:var(--purple); border-radius:3px; width:0%; transition:width 0.25s linear; }
+.audio-time { font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--text2); min-width:32px; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ===== HOME ===== -->
+  <div class="screen active" id="screen-home">
+    <div class="home-logo">
+      <div class="logo-text">קוויזי</div>
+      <div class="logo-sub">משחק חידות אינטרקטיבי</div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">הצטרף למשחק</div>
+      <input class="input-field input-code" id="join-code" type="text" inputmode="numeric" maxlength="6" placeholder="קוד משחק">
+      <div style="height:8px"></div>
+      <input class="input-field" id="join-name" type="text" maxlength="16" placeholder="השם שלך">
+      <div style="height:10px"></div>
+      <button class="btn btn-primary" onclick="joinGame()">הצטרף ▶</button>
+    </div>
+
+    <div class="divider">— או —</div>
+
+    <button class="btn btn-secondary" style="margin-bottom:10px" onclick="showScreen(&#39;admin-setup&#39;)">👑 מנהל — פתח משחק חדש</button>
+    <button class="btn btn-secondary" onclick="openFirebaseConfig()">⚙️ הגדרת Firebase</button>
+  </div>
+
+  <!-- ===== FIREBASE CONFIG ===== -->
+  <div class="screen" id="screen-firebase">
+    <button class="back-btn" onclick="showScreen(&#39;home&#39;)">← חזור</button>
+    <h2 style="margin-bottom:1rem">הגדרת Firebase</h2>
+    <div class="card">
+      <div style="font-size:0.85rem; color:var(--text2); margin-bottom:1rem; line-height:1.6;">
+        כדי לאפשר משחק בין מכשירים שונים:<br>
+        1. צור פרויקט ב-<strong style="color:var(--purple)">console.firebase.google.com</strong><br>
+        2. הפעל <strong>Realtime Database</strong><br>
+        3. העתק את הגדרות ה-SDK<br>
+        4. הגדר Rules: <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:0.8rem;">{ "rules": { ".read": true, ".write": true } }</code>
+      </div>
+      <div class="modal-label">Project API Key</div>
+      <input class="input-field" id="fb-api-key" placeholder="AIzaSy..." style="text-align:right;margin-bottom:8px;">
+      <div class="modal-label">Database URL</div>
+      <input class="input-field" id="fb-db-url" placeholder="https://project-default-rtdb.firebaseio.com" style="text-align:right;margin-bottom:8px;">
+      <div class="modal-label">Project ID</div>
+      <input class="input-field" id="fb-project-id" placeholder="my-project-id" style="text-align:right;margin-bottom:8px;">
+      <div class="modal-label">Claude API Key</div>
+      <input class="input-field" id="claude-api-key" type="password" placeholder="sk-ant-..." style="text-align:right;margin-bottom:8px;">
+      <div style="height:4px"></div>
+      <button class="btn btn-primary" onclick="saveConfig()">שמור והפעל</button>
+    </div>
+    <div class="card" style="background:rgba(124,111,255,0.06);">
+      <div style="font-size:0.8rem; color:var(--text2);">⚡ <strong style="color:var(--text)">מצב הדגמה:</strong> ללא Firebase, ניתן לשחק על מכשיר אחד בלבד.<br>
+      עם Firebase — שחקנים ממכשירים שונים יכולים להצטרף בזמן אמת.</div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN SETUP ===== -->
+  <div class="screen" id="screen-admin-setup">
+    <button class="back-btn" onclick="showScreen(&#39;home&#39;)">← חזור</button>
+    <h2 style="margin-bottom:1.25rem">הגדרות משחק</h2>
+
+    <div class="card">
+      <div class="section-label">בחר נושא</div>
+      <div class="grid-3" id="topics-grid">
+        <div class="topic-card active" data-topic="כללי">
+          <span class="topic-icon">🎲</span>כללי
+        </div>
+        <div class="topic-card" data-topic="היסטוריה">
+          <span class="topic-icon">📜</span>היסטוריה
+        </div>
+        <div class="topic-card" data-topic="מדע">
+          <span class="topic-icon">🔬</span>מדע
+        </div>
+        <div class="topic-card" data-topic="מוזיקת דיסני">
+          <span class="topic-icon">✨</span>דיסני
+        </div>
+        <div class="topic-card" data-topic="גיאוגרפיה">
+          <span class="topic-icon">🌍</span>גיאוגרפיה
+        </div>
+        <div class="topic-card" data-topic="קולנוע">
+          <span class="topic-icon">🎬</span>קולנוע
+        </div>
+        <div class="topic-card" data-topic="ספורט">
+          <span class="topic-icon">⚽</span>ספורט
+        </div>
+        <div class="topic-card" data-topic="אוכל">
+          <span class="topic-icon">🍕</span>אוכל
+        </div>
+        <div class="topic-card" data-topic="מוזיקה">
+          <span class="topic-icon">🎵</span>מוזיקה
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">זמן לשאלה</div>
+      <div class="chip-grid" id="time-chips">
+        <div class="chip" data-time="10">10 שנ׳</div>
+        <div class="chip active" data-time="20">20 שנ׳</div>
+        <div class="chip" data-time="30">30 שנ׳</div>
+        <div class="chip" data-time="45">45 שנ׳</div>
+        <div class="chip" data-time="60">60 שנ׳</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">מספר שאלות</div>
+      <div class="chip-grid" id="qcount-chips">
+        <div class="chip" data-qc="5">5</div>
+        <div class="chip active" data-qc="10">10</div>
+        <div class="chip" data-qc="15">15</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">מצב שאלה</div>
+      <div class="chip-grid" id="mode-chips">
+        <div class="chip active" data-mode="text">📝 טקסט</div>
+        <div class="chip" data-mode="video">📺 ווידאו</div>
+        <div class="chip" data-mode="music">🎶 מוזיקה</div>
+      </div>
+      <div id="audio-urls-wrap" style="display:none; margin-top:12px;">
+        <div style="font-size:0.78rem; color:var(--text2); margin-bottom:10px; line-height:1.6;">
+          📁 העלו קבצי MP3 ל-Google Drive (שתפו כ"כל מי שיש קישור"), הכנסו את קישורי ה-<strong style="color:var(--text)">Direct Download</strong> כאן.<br>
+          <span style="color:var(--purple);">טיפ: בדרייב שנו את הקישור מ-/file/d/ID/view → /uc?export=download&amp;id=ID</span>
+        </div>
+        <div id="audio-url-fields"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="margin-top:0.5rem" onclick="createGame()">⚡ צור משחק</button>
+  </div>
+
+  <!-- ===== GENERATING ===== -->
+  <div class="screen" id="screen-generating">
+    <div class="gen-center">
+      <div class="spinner"></div>
+      <h3 id="gen-title" style="margin-bottom:8px;">יוצר שאלות עם Claude...</h3>
+      <div style="font-size:0.85rem; color:var(--text2);" id="gen-sub">בנושא: <span id="gen-topic-name"></span></div>
+      <div class="gen-dots" style="margin-top:1.5rem;"><span>●</span><span>●</span><span>●</span></div>
+    </div>
+  </div>
+
+  <!-- ===== LOBBY (HOST) ===== -->
+  <div class="screen" id="screen-lobby-host">
+    <div style="text-align:center; margin-bottom:1.5rem;">
+      <div style="font-size:0.8rem; color:var(--text2); margin-bottom:4px; font-family:&#39;Space Mono&#39;,monospace;">קוד כניסה</div>
+      <div class="code-display" id="lobby-code">------</div>
+      <div style="font-size:0.8rem; color:var(--text2);">שתפו את הקוד עם השחקנים</div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="section-label" style="margin:0;">שחקנים שהצטרפו</div>
+        <div id="player-count-badge" style="font-family:&#39;Space Mono&#39;,monospace; font-size:0.8rem; color:var(--purple);">0</div>
+      </div>
+      <div class="player-list" id="lobby-player-list">
+        <div style="font-size:0.8rem; color:var(--text2);">ממתין לשחקנים...</div>
+      </div>
+    </div>
+
+    <div class="card" style="font-size:0.85rem; color:var(--text2); display:flex; gap:12px; flex-wrap:wrap;">
+      <span>📚 <span id="lobby-topic-label">—</span></span>
+      <span>🔢 <span id="lobby-q-label">—</span> שאלות</span>
+      <span>⏱ <span id="lobby-time-label">—</span> שנ׳</span>
+    </div>
+
+    <button class="btn btn-green" style="margin-top:1rem" id="start-btn" onclick="startGame()">התחל משחק ▶</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="showScreen(&#39;home&#39;)">ביטול</button>
+  </div>
+
+  <!-- ===== QUESTION (HOST) ===== -->
+  <div class="screen" id="screen-question-host">
+    <div class="q-meta">
+      <div>
+        <div class="q-badge">שאלה <span id="hq-num">1</span> / <span id="hq-total">10</span></div>
+        <div style="font-size:0.75rem; color:var(--text2); margin-top:4px;" id="hq-topic"></div>
+      </div>
+      <div class="timer-ring-wrap">
+        <svg width="56" height="56" class="timer-ring">
+          <circle class="track" cx="28" cy="28" r="22"></circle>
+          <circle class="progress" id="timer-ring-prog" cx="28" cy="28" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"></circle>
+        </svg>
+        <div class="timer-num" id="hq-timer">20</div>
+      </div>
+    </div>
+
+    <div class="timer-bar-wrap"><div class="timer-bar" id="hq-bar" style="width:100%"></div></div>
+
+    <div id="hq-media" style="display:none;" class="media-box"></div>
+    <div class="q-text-box" id="hq-text">שאלה...</div>
+
+    <div class="answers-grid" id="hq-answers"></div>
+
+    <div class="live-stats">
+      <div class="live-dot"></div>
+      <span>ענו: <span id="hq-ans-count">0</span> / <span id="hq-ans-total">0</span></span>
+    </div>
+  </div>
+
+  <!-- ===== REVEAL (HOST) ===== -->
+  <div class="screen" id="screen-reveal-host">
+    <div class="section-label" style="text-align:center; margin-bottom:8px;">תשובה נכונה</div>
+    <div class="reveal-answer" id="reveal-correct-text"></div>
+    <div class="result-bars" id="reveal-bars"></div>
+    <div class="card" style="margin-bottom:1rem">
+      <div class="section-label" style="margin-bottom:8px;">מוביל עכשיו</div>
+      <div id="mid-scores"></div>
+    </div>
+    <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()"></button>
+  </div>
+
+  <!-- ===== PLAYER SCREEN ===== -->
+  <div class="screen" id="screen-player">
+    <div class="player-header">
+      <div class="player-name-tag" id="p-name-tag">שם</div>
+      <div class="player-pts-tag">⭐ <span id="p-pts">0</span></div>
+    </div>
+
+    <div id="p-waiting" class="waiting-screen">
+      <div class="waiting-icon">🎮</div>
+      <h3>ממתין למשחק...</h3>
+      <div style="font-size:0.85rem; color:var(--text2); margin-top:8px;">כשהמשחק יתחיל תוכל לענות כאן</div>
+    </div>
+
+    <div id="p-question-view" style="display:none;">
+      <div class="q-meta" style="margin-bottom:8px;">
+        <div class="q-badge">שאלה <span id="p-q-num">1</span></div>
+        <div class="timer-ring-wrap">
+          <svg width="56" height="56" class="timer-ring">
+            <circle class="track" cx="28" cy="28" r="22"></circle>
+            <circle class="progress" id="p-timer-ring" cx="28" cy="28" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"></circle>
+          </svg>
+          <div class="timer-num" id="p-timer">20</div>
+        </div>
+      </div>
+      <div class="timer-bar-wrap"><div class="timer-bar" id="p-bar" style="width:100%"></div></div>
+      <div class="q-text-box" id="p-q-text" style="font-size:1rem; min-height:80px;"></div>
+      <div class="answers-grid" id="p-answers"></div>
+    </div>
+
+    <div id="p-answered-view" style="display:none;" class="result-overlay">
+      <div class="result-big" id="p-res-icon">✅</div>
+      <div class="result-status" id="p-res-text">תשובה נכונה!</div>
+      <div class="result-pts" id="p-res-pts">+850</div>
+      <div style="font-size:0.8rem; color:var(--text2); margin-top:8px;">ממתין לשאלה הבאה...</div>
+    </div>
+  </div>
+
+  <!-- ===== FINAL SCORES ===== -->
+  <div class="screen" id="screen-final">
+    <div style="text-align:center; padding:1.5rem 0 1rem;">
+      <div style="font-size:2rem; margin-bottom:4px;">🏆</div>
+      <h2>תוצאות סופיות</h2>
+    </div>
+    <div class="podium" id="podium"></div>
+    <div id="full-scores"></div>
+    <button class="btn btn-primary" style="margin-top:1rem" onclick="showScreen(&#39;home&#39;)">משחק חדש</button>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== FIREBASE CONFIG ==========
+let db = null;
+let gameRef = null;
+
+const DEMO_MODE_KEY = 'quizlive_demo';
+const CONFIG_KEY = 'quizlive_config';
+
+let cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}');
+
+function initFirebase() {
+  if (!cfg.apiKey || !cfg.dbUrl || !cfg.projectId) {
+    return false;
+  }
+  try {
+    if (firebase.apps.length === 0) {
+      firebase.initializeApp({
+        apiKey: cfg.apiKey,
+        databaseURL: cfg.dbUrl,
+        projectId: cfg.projectId,
+        appId: '1:000000000000:web:000000'
+      });
+    }
+    db = firebase.database();
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+const firebaseReady = initFirebase();
+
+// ========== STATE ==========
+const S = {
+  role: null, // 'host' | 'player'
+  gameCode: '',
+  topic: 'כללי',
+  timePerQ: 20,
+  qCount: 10,
+  mode: 'text',
+  questions: [],
+  currentQ: 0,
+  timerLeft: 20,
+  timerInterval: null,
+  players: {},
+  scores: {},
+  playerName: '',
+  playerAnswered: false,
+  playerScore: 0,
+  videoUrl: '',
+  demoPlayers: ['נטע','עומר','עמית','רונן'],
+};
+
+// ========== SCREENS ==========
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ========== CONFIG ==========
+function openFirebaseConfig() {
+  document.getElementById('fb-api-key').value = cfg.apiKey || '';
+  document.getElementById('fb-db-url').value = cfg.dbUrl || '';
+  document.getElementById('fb-project-id').value = cfg.projectId || '';
+  document.getElementById('claude-api-key').value = cfg.claudeKey || '';
+  showScreen('firebase');
+}
+
+function saveConfig() {
+  cfg = {
+    apiKey: document.getElementById('fb-api-key').value.trim(),
+    dbUrl: document.getElementById('fb-db-url').value.trim(),
+    projectId: document.getElementById('fb-project-id').value.trim(),
+    claudeKey: document.getElementById('claude-api-key').value.trim(),
+  };
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+  initFirebase();
+  toast('הגדרות נשמרו ✓');
+  showScreen('home');
+}
+
+// ========== TOPICS / CHIPS ==========
+document.querySelectorAll('.topic-card').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.topic-card').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    S.topic = el.dataset.topic;
+  });
+});
+
+document.querySelectorAll('#time-chips .chip').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('#time-chips .chip').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    S.timePerQ = parseInt(el.dataset.time);
+  });
+});
+
+document.querySelectorAll('#qcount-chips .chip').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('#qcount-chips .chip').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    S.qCount = parseInt(el.dataset.qc);
+  });
+});
+
+document.querySelectorAll('#mode-chips .chip').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('#mode-chips .chip').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    S.mode = el.dataset.mode;
+    document.getElementById('video-url-wrap').style.display = 'none';
+    document.getElementById('audio-urls-wrap').style.display = S.mode === 'music' ? 'block' : 'none';
+    if (S.mode === 'music') renderAudioUrlFields();
+  });
+});
+
+function renderAudioUrlFields() {
+  const songs = ['Let It Go','Hakuna Matata','Part of Your World','A Whole New World',"How Far I'll Go",'Beauty and the Beast','I See the Light',"You've Got a Friend",'Remember Me','Circle of Life'];
+  const container = document.getElementById('audio-url-fields');
+  container.innerHTML = songs.slice(0, S.qCount).map((song, i) => `
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.75rem; color:var(--text2); margin-bottom:3px;">${i+1}. ${song}</div>
+      <input class="input-field" id="audio-url-${i}" placeholder="קישור ישיר ל-MP3..." style="text-align:right; font-size:0.85rem; padding:9px 12px;" />
+    </div>
+  `).join('');
+}
+
+// ========== CREATE GAME ==========
+async function createGame() {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  S.gameCode = code;
+  S.role = 'host';
+  S.currentQ = 0;
+  S.scores = {};
+  S.players = {};
+  S.videoUrl = '';
+  S.audioUrls = {};
+  if (S.mode === 'music') {
+    for (let i = 0; i < S.qCount; i++) {
+      const inp = document.getElementById('audio-url-' + i);
+      if (inp && inp.value.trim()) S.audioUrls['disney_' + (i+1)] = inp.value.trim();
+    }
+  }
+
+  document.getElementById('gen-topic-name').textContent = S.topic;
+  showScreen('generating');
+
+  S.questions = await generateQuestionsAI(S.topic, S.qCount, S.mode);
+  
+  // Inject real audio URLs into questions
+  if (S.mode === 'music') {
+    S.questions.forEach(q => {
+      if (q.audioUrl && S.audioUrls[q.audioUrl]) {
+        q.audioUrl = S.audioUrls[q.audioUrl];
+      } else if (q.audioUrl && q.audioUrl.startsWith('disney_')) {
+        // No URL provided — mark as missing
+        q.audioUrl = null;
+        q.mediaHint = '🎵 ' + (q.songName || 'שיר דיסני') + ' — קישור אודיו לא הוגדר';
+      }
+    });
+  }
+
+  if (db) {
+    gameRef = db.ref('games/' + code);
+    await gameRef.set({
+      host: true,
+      topic: S.topic,
+      timePerQ: S.timePerQ,
+      qCount: S.qCount,
+      mode: S.mode,
+      phase: 'lobby',
+      questions: S.questions,
+      scores: {},
+      currentQ: -1,
+    });
+    gameRef.child('players').on('value', snap => {
+      const players = snap.val() || {};
+      S.players = players;
+      updateLobbyPlayers(players);
+    });
+    gameRef.child('answers').on('value', snap => {
+      const answers = snap.val() || {};
+      const count = Object.keys(answers).filter(k => answers[k] !== null).length;
+      const total = Object.keys(S.players).length;
+      const el = document.getElementById('hq-ans-count');
+      if (el) el.textContent = count;
+      const te = document.getElementById('hq-ans-total');
+      if (te) te.textContent = total;
+    });
+  } else {
+    // Demo players
+    S.demoPlayers.forEach(p => { S.players[p] = { name: p }; S.scores[p] = 0; });
+  }
+
+  // Lobby
+  document.getElementById('lobby-code').textContent = code;
+  document.getElementById('lobby-topic-label').textContent = S.topic;
+  document.getElementById('lobby-q-label').textContent = S.qCount;
+  document.getElementById('lobby-time-label').textContent = S.timePerQ;
+  if (!db) updateLobbyPlayers(S.players);
+  showScreen('lobby-host');
+}
+
+function updateLobbyPlayers(players) {
+  const list = document.getElementById('lobby-player-list');
+  const names = Object.values(players).map(p => p.name || p);
+  list.innerHTML = names.length ? names.map(n => `<div class="player-chip">${n}</div>`).join('') : '<div style="font-size:0.8rem;color:var(--text2);">ממתין לשחקנים...</div>';
+  document.getElementById('player-count-badge').textContent = names.length;
+}
+
+// ========== JOIN GAME ==========
+async function joinGame() {
+  const code = document.getElementById('join-code').value.trim();
+  const name = document.getElementById('join-name').value.trim();
+  if (!code || !name) { toast('הכנס קוד ושם'); return; }
+
+  S.gameCode = code;
+  S.playerName = name;
+  S.role = 'player';
+  S.playerScore = 0;
+  S.playerAnswered = false;
+
+  document.getElementById('p-name-tag').textContent = name;
+  document.getElementById('p-pts').textContent = '0';
+
+  if (db) {
+    gameRef = db.ref('games/' + code);
+    const snap = await gameRef.once('value');
+    if (!snap.exists()) { toast('קוד לא נמצא'); return; }
+
+    await gameRef.child('players/' + name).set({ name });
+
+    gameRef.child('phase').on('value', snap => {
+      const phase = snap.val();
+      if (phase === 'question') loadPlayerQuestion();
+      if (phase === 'reveal') showPlayerReveal();
+      if (phase === 'final') showFinalForPlayer();
+    });
+
+    gameRef.child('scores/' + name).on('value', snap => {
+      const pts = snap.val() || 0;
+      S.playerScore = pts;
+      document.getElementById('p-pts').textContent = pts.toLocaleString();
+    });
+  }
+
+  showScreen('player');
+  document.getElementById('p-waiting').style.display = 'block';
+  document.getElementById('p-question-view').style.display = 'none';
+  document.getElementById('p-answered-view').style.display = 'none';
+
+  toast(`הצטרפת בהצלחה! 🎮`);
+}
+
+// ========== START GAME ==========
+async function startGame() {
+  S.currentQ = 0;
+  if (db && gameRef) {
+    await gameRef.update({ phase: 'question', currentQ: 0 });
+    const scores = {};
+    Object.values(S.players).forEach(p => { scores[p.name || p] = 0; });
+    await gameRef.child('scores').set(scores);
+    Object.keys(S.players).forEach(k => { S.scores[k] = 0; });
+  }
+  showHostQuestion();
+}
+
+// ========== HOST QUESTION ==========
+function showHostQuestion() {
+  const q = S.questions[S.currentQ];
+  if (!q) return;
+
+  document.getElementById('hq-num').textContent = S.currentQ + 1;
+  document.getElementById('hq-total').textContent = S.questions.length;
+  document.getElementById('hq-topic').textContent = S.topic;
+  document.getElementById('hq-text').textContent = q.q;
+  document.getElementById('hq-ans-count').textContent = '0';
+  document.getElementById('hq-ans-total').textContent = Object.keys(S.players).length;
+
+  const mediaBox = document.getElementById('hq-media');
+  if (q.audioUrl) {
+    mediaBox.style.display = 'block';
+    mediaBox.innerHTML = buildAudioPlayer(q.audioUrl, q.songName || '');
+    setTimeout(() => autoPlayAudio(), 300);
+  } else if (q.mediaHint) {
+    mediaBox.style.display = 'block';
+    mediaBox.innerHTML = `<div class="music-hint"><div class="music-note-anim">🎵</div><div>${q.mediaHint}</div></div>`;
+  } else {
+    mediaBox.style.display = 'none';
+  }
+
+  const grid = document.getElementById('hq-answers');
+  grid.innerHTML = q.answers.map((a,i) => `<button class="ans-btn" onclick="hostPickAnswer(${i},this)">${a}</button>`).join('');
+
+  startTimer('host');
+  showScreen('question-host');
+
+  if (db && gameRef) {
+    gameRef.update({ phase: 'question', currentQ: S.currentQ });
+    gameRef.child('answers').remove();
+  }
+}
+
+// ========== PLAYER QUESTION ==========
+async function loadPlayerQuestion() {
+  if (!db || !gameRef) return;
+  const snap = await gameRef.once('value');
+  const game = snap.val();
+  if (!game || game.phase !== 'question') return;
+
+  const q = game.questions[game.currentQ];
+  if (!q) return;
+  S.currentQ = game.currentQ;
+  S.timePerQ = game.timePerQ;
+  S.playerAnswered = false;
+
+  document.getElementById('p-q-num').textContent = game.currentQ + 1;
+  document.getElementById('p-q-text').textContent = q.q;
+
+  const pg = document.getElementById('p-answers');
+  pg.innerHTML = q.answers.map((a,i) => `<button class="ans-btn" onclick="playerAnswer(${i},this)">${a}</button>`).join('');
+
+  document.getElementById('p-waiting').style.display = 'none';
+  document.getElementById('p-answered-view').style.display = 'none';
+  document.getElementById('p-question-view').style.display = 'block';
+
+  startTimer('player');
+}
+
+function playerAnswer(idx, btn) {
+  if (S.playerAnswered) return;
+  S.playerAnswered = true;
+
+  const q = S.questions[S.currentQ] || (db ? null : S.questions[S.currentQ]);
+
+  document.querySelectorAll('#p-answers .ans-btn').forEach(b => { b.disabled = true; b.classList.add('dim'); });
+  btn.classList.remove('dim');
+  btn.classList.add('selected-ans');
+
+  let pts = 0;
+  let correct = false;
+
+  if (q) {
+    correct = idx === q.correct;
+    if (correct) pts = Math.max(200, Math.round((S.timerLeft / S.timePerQ) * 800) + 200);
+    S.playerScore += pts;
+    document.getElementById('p-pts').textContent = S.playerScore.toLocaleString();
+  }
+
+  if (db && gameRef) {
+    gameRef.child('answers/' + S.playerName).set({ idx, time: S.timerLeft });
+    if (correct) gameRef.child('scores/' + S.playerName).transaction(v => (v || 0) + pts);
+  }
+
+  showAnswerResult(correct, pts);
+}
+
+function showAnswerResult(correct, pts) {
+  clearInterval(S.timerInterval);
+  document.getElementById('p-question-view').style.display = 'none';
+  document.getElementById('p-answered-view').style.display = 'block';
+  document.getElementById('p-res-icon').textContent = correct ? '✅' : '❌';
+  document.getElementById('p-res-text').textContent = correct ? 'תשובה נכונה!' : 'לא נכון...';
+  document.getElementById('p-res-pts').textContent = correct ? '+' + pts.toLocaleString() + ' נק׳' : '';
+}
+
+async function showPlayerReveal() {
+  document.getElementById('p-waiting').style.display = 'block';
+  document.getElementById('p-question-view').style.display = 'none';
+  document.getElementById('p-answered-view').style.display = 'none';
+  document.getElementById('p-waiting').querySelector('h3').textContent = 'ממתין לשאלה הבאה...';
+}
+
+function showFinalForPlayer() {
+  showScreen('final');
+  loadFinalScores();
+}
+
+// ========== TIMER ==========
+function startTimer(who) {
+  clearInterval(S.timerInterval);
+  S.timerLeft = S.timePerQ;
+  const total = S.timePerQ;
+  const CIRCUMFERENCE = 138.2;
+
+  const updateEl = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+  const updateWidth = (id, pct) => { const e = document.getElementById(id); if(e) e.style.width = pct + '%'; };
+  const updateDash = (id, pct) => { const e = document.getElementById(id); if(e) e.style.strokeDashoffset = CIRCUMFERENCE * (1 - pct/100); };
+
+  const tick = () => {
+    const pct = (S.timerLeft / total) * 100;
+    if (who === 'host') {
+      updateEl('hq-timer', S.timerLeft);
+      updateWidth('hq-bar', pct);
+      updateDash('timer-ring-prog', pct);
+      const ring = document.getElementById('timer-ring-prog');
+      if (ring) ring.style.stroke = pct < 30 ? 'var(--pink)' : 'var(--purple)';
+    } else {
+      updateEl('p-timer', S.timerLeft);
+      updateWidth('p-bar', pct);
+      updateDash('p-timer-ring', pct);
+    }
+  };
+
+  tick();
+  S.timerInterval = setInterval(() => {
+    S.timerLeft--;
+    tick();
+    if (S.timerLeft <= 0) {
+      clearInterval(S.timerInterval);
+      if (who === 'host') showRevealHost();
+      else if (!S.playerAnswered) showAnswerResult(false, 0);
+    }
+  }, 1000);
+}
+
+// ========== HOST PICKS ANSWER (demo mode) ==========
+function hostPickAnswer(idx, btn) {
+  const q = S.questions[S.currentQ];
+  if (!q) return;
+
+  // Disable all buttons
+  document.querySelectorAll('#hq-answers .ans-btn').forEach(b => {
+    b.disabled = true;
+    b.classList.add('dim');
+  });
+  btn.classList.remove('dim');
+
+  const isCorrect = idx === q.correct;
+  btn.style.outline = isCorrect ? '3px solid #00d4aa' : '3px solid #ff4d8f';
+
+  // Award points for demo players
+  if (!db) {
+    S.demoPlayers.forEach(p => {
+      const correct = Math.random() > 0.35;
+      if (correct) S.scores[p] = (S.scores[p] || 0) + Math.floor(Math.random() * 700 + 200);
+    });
+    if (isCorrect) {
+      const pts = Math.max(200, Math.round((S.timerLeft / S.timePerQ) * 800) + 200);
+      S.scores['רונן'] = (S.scores['רונן'] || 0) + pts;
+    }
+  }
+
+  clearInterval(S.timerInterval);
+  setTimeout(() => showRevealHost(), 600);
+}
+
+// ========== REVEAL HOST ==========
+function showRevealHost() {
+  stopCurrentAudio();
+  clearInterval(S.timerInterval);
+  const q = S.questions[S.currentQ];
+
+  // Fake demo answers
+  if (!db) {
+    S.demoPlayers.forEach(p => {
+      const correct = Math.random() > 0.4;
+      if (correct) S.scores[p] = (S.scores[p]||0) + Math.floor(Math.random()*600+200);
+    });
+  } else {
+    if (gameRef) gameRef.update({ phase: 'reveal' });
+  }
+
+  document.getElementById('reveal-correct-text').textContent = '✓ ' + q.answers[q.correct];
+
+  // Distribution bars
+  const pcts = q.answers.map((_,i) => i===q.correct ? Math.floor(Math.random()*35+40) : Math.floor(Math.random()*25));
+  const colors = ['#6c63ff','#ff5757','#00bfa5','#ff9f43'];
+  document.getElementById('reveal-bars').innerHTML = pcts.map((p,i) => `
+    <div class="result-bar-col">
+      <div class="result-bar-wrap">
+        <div class="result-bar-fill" style="height:${p}%; background:${colors[i]};"></div>
+      </div>
+      <div class="result-bar-pct">${p}%</div>
+    </div>
+  `).join('');
+
+  // Mid scores (top 5)
+  loadMidScores();
+
+  const isLast = S.currentQ + 1 >= S.questions.length;
+  document.getElementById('next-btn').textContent = isLast ? '🏆 תוצאות סופיות' : 'שאלה הבאה →';
+
+  if (db && gameRef) gameRef.update({ phase: 'reveal', scores: S.scores });
+
+  showScreen('reveal-host');
+}
+
+async function loadMidScores() {
+  let scores = S.scores;
+  if (db && gameRef) {
+    const snap = await gameRef.child('scores').once('value');
+    scores = snap.val() || {};
+  }
+  const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('mid-scores').innerHTML = sorted.map(([n,s],i) =>
+    `<div class="score-item"><div class="score-rank">${['🥇','🥈','🥉','4','5'][i]}</div><div class="score-name">${n}</div><div class="score-pts-val">${(s||0).toLocaleString()}</div></div>`
+  ).join('');
+}
+
+// ========== NEXT QUESTION ==========
+async function nextQuestion() {
+  stopCurrentAudio();
+  S.currentQ++;
+  if (S.currentQ >= S.questions.length) {
+    if (db && gameRef) await gameRef.update({ phase: 'final' });
+    loadFinalScores();
+    showScreen('final');
+  } else {
+    if (db && gameRef) await gameRef.update({ phase: 'question', currentQ: S.currentQ });
+    showHostQuestion();
+  }
+}
+
+// ========== FINAL SCORES ==========
+async function loadFinalScores() {
+  let scores = S.scores;
+  if (db && gameRef) {
+    const snap = await gameRef.child('scores').once('value');
+    scores = snap.val() || {};
+  }
+  const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+
+  // Podium (top 3)
+  const colors = ['#ffd166','#c0c0c0','#cd7f32'];
+  const podiumHTML = sorted.slice(0,3).map(([name,score],i) => {
+    const barCls = ['p1','p2','p3'][i];
+    return `<div class="podium-slot">
+      <div class="podium-avatar" style="background:${colors[i]}22; border:2px solid ${colors[i]};">${name[0]}</div>
+      <div class="podium-name" style="font-size:0.8rem;">${name}</div>
+      <div class="podium-bar ${barCls}">${score.toLocaleString()}</div>
+    </div>`;
+  });
+  // Order: 2nd, 1st, 3rd
+  const order = [podiumHTML[1]||'', podiumHTML[0]||'', podiumHTML[2]||''];
+  document.getElementById('podium').innerHTML = order.join('');
+
+  document.getElementById('full-scores').innerHTML = sorted.map(([n,s],i) =>
+    `<div class="score-item"><div class="score-rank">${['🥇','🥈','🥉'][i]||i+1}</div><div class="score-name">${n}</div><div class="score-pts-val">${(s||0).toLocaleString()}</div></div>`
+  ).join('');
+}
+
+// ========== AI QUESTION GENERATION ==========
+async function generateQuestionsAI(topic, count, mode) {
+  const claudeKey = cfg.claudeKey;
+  if (!claudeKey) {
+    document.getElementById('gen-title').textContent = 'טוען שאלות...';
+    return getFallbackQs(topic, count);
+  }
+
+  const isDisney = topic === 'מוזיקת דיסני' || mode === 'music';
+  // Disney questions always use hardcoded YouTube IDs from fallback bank
+  if (isDisney) {
+    document.getElementById('gen-title').textContent = 'טוען שאלות מוזיקה...';
+    await new Promise(r => setTimeout(r, 600));
+    return getFallbackQs('מוזיקת דיסני', count);
+  }
+  let prompt = isDisney
+    ? ``
+    : `צור ${count} שאלות חידה מגוונות בעברית בנושא: ${topic}. שאלות מעניינות עם רמות קושי שונות. פורמט JSON בלבד: {"questions":[{"q":"השאלה","answers":["תשובה1","תשובה2","תשובה3","תשובה4"],"correct":0}]}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': claudeKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const text = data.content[0].text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+    return parsed.questions.slice(0, count);
+  } catch(e) {
+    document.getElementById('gen-title').textContent = 'טוען שאלות דוגמה...';
+    await new Promise(r => setTimeout(r, 800));
+    return getFallbackQs(topic, count);
+  }
+}
+
+function getFallbackQs(topic, n) {
+  const banks = {
+    'מוזיקת דיסני': [
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['פרוזן','מרידה','טנגלד','מואנה'],correct:0,songName:'Let It Go',audioUrl:'disney_1'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['מלך האריות','ג\u05F3ונגל בוק','אלדין','פוקהונטס'],correct:0,songName:'Hakuna Matata',audioUrl:'disney_2'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['הרמקולה הקטנה','מואנה','פינדינג נמו','פנטסיה'],correct:0,songName:'Part of Your World',audioUrl:'disney_3'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['אלדין','הרקולס','מולאן','הרמקולה הקטנה'],correct:0,songName:'A Whole New World',audioUrl:'disney_4'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['מואנה','פרוזן','טנגלד','ברייב'],correct:0,songName:"How Far I'll Go",audioUrl:'disney_5'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['היפה והחיה','שלגייה','סינדרלה','אורורה'],correct:0,songName:'Beauty and the Beast',audioUrl:'disney_6'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['טנגלד','פרוזן','מואנה','הנסיכה והצפרדע'],correct:0,songName:'I See the Light',audioUrl:'disney_7'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['צעצוע של סיפור','מואנה','UP','וול-אי'],correct:0,songName:"You've Got a Friend",audioUrl:'disney_8'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['קוקו','מואנה','פרוזן','ברייב'],correct:0,songName:'Remember Me',audioUrl:'disney_9'},
+      {q:'🎵 האזינו — מאיזה סרט?',answers:['מלך האריות','ג\u05F3ונגל בוק','טרזן','פוקהונטס'],correct:0,songName:'Circle of Life',audioUrl:'disney_10'},
+    ],
+
+    'היסטוריה': [
+      {q:'באיזו שנה פרצה מלחמת העולם השנייה?',answers:['1939','1941','1935','1942'],correct:0},
+      {q:'מי היה הקיסר הרומי הראשון?',answers:['אוגוסטוס','יוליוס קיסר','נרון','קליגולה'],correct:0},
+      {q:'באיזו שנה נחתו האמריקנים על הירח לראשונה?',answers:['1969','1972','1965','1971'],correct:0},
+      {q:'מי חיבר את הצהרת העצמאות האמריקנית?',answers:['תומאס ג׳פרסון','ג׳ון אדמס','ג׳ורג׳ וושינגטון','בנג׳מין פרנקלין'],correct:0},
+      {q:'באיזו שנה נפל חומת ברלין?',answers:['1989','1991','1987','1993'],correct:0},
+    ],
+    'מדע': [
+      {q:'מה הסמל הכימי של זהב?',answers:['Au','Go','Ag','Gd'],correct:0},
+      {q:'כמה כרומוזומים יש לאדם בריא?',answers:['46','44','48','42'],correct:0},
+      {q:'מי גילה את הפניצילין?',answers:['אלכסנדר פלמינג','לואי פסטר','מארי קירי','אלברט אינשטיין'],correct:0},
+      {q:'מהי יחידת המדידה של עוצמת הקול?',answers:['דציבל','הרץ','ואט','אמפר'],correct:0},
+      {q:'כמה רגליים יש לעכביש?',answers:['8','6','10','12'],correct:0},
+    ],
+    'כללי': [
+      {q:'מה בירת צרפת?',answers:['פריז','מרסיי','ליון','בורדו'],correct:0},
+      {q:'כמה ימים יש בשנה רגילה?',answers:['365','364','366','360'],correct:0},
+      {q:'מה הפלנטה הגדולה ביותר במערכת השמש?',answers:['צדק','שבתאי','אורנוס','נפטון'],correct:0},
+      {q:'מהו הסמל הכימי של מים?',answers:['H₂O','HO','H₂O₂','OH'],correct:0},
+      {q:'כמה שחקנים יש בקבוצת כדורגל?',answers:['11','10','9','12'],correct:0},
+    ],
+  };
+  const bank = banks[topic] || banks['כללי'];
+  const out = [];
+  for(let i=0; i<Math.min(n,15); i++) out.push(bank[i % bank.length]);
+  return out;
+}
+
+// ========== AUDIO PLAYER ==========
+let currentAudio = null;
+
+function buildAudioPlayer(url, songName) {
+  return `
+    <div class="audio-player" id="audio-player-box">
+      <div class="audio-waveform paused" id="audio-wave">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+      <div class="audio-row">
+        <button class="audio-play-btn" id="audio-play-btn" onclick="toggleAudio()">▶</button>
+        <div class="audio-progress-wrap" onclick="seekAudio(event, this)">
+          <div class="audio-progress-fill" id="audio-prog"></div>
+        </div>
+        <span class="audio-time" id="audio-time">0:00</span>
+      </div>
+      <audio id="audio-el" src="${url}" preload="auto" onended="onAudioEnd()" ontimeupdate="updateAudioProgress()"></audio>
+      <div style="font-size:0.78rem;color:var(--text2);text-align:center;">🎵 האזינו לקטע ונחשו מאיזה סרט</div>
+    </div>`;
+}
+
+function autoPlayAudio() {
+  const el = document.getElementById('audio-el');
+  if (!el) return;
+  currentAudio = el;
+  const btn = document.getElementById('audio-play-btn');
+  const wave = document.getElementById('audio-wave');
+  el.play().then(() => {
+    if(btn) { btn.textContent = '⏸'; btn.classList.add('playing'); }
+    if(wave) wave.classList.remove('paused');
+  }).catch(() => {
+    // autoplay blocked — user must tap
+  });
+}
+
+function toggleAudio() {
+  const el = document.getElementById('audio-el');
+  if (!el) return;
+  const btn = document.getElementById('audio-play-btn');
+  const wave = document.getElementById('audio-wave');
+  if (el.paused) {
+    el.play();
+    if(btn) { btn.textContent = '⏸'; btn.classList.add('playing'); }
+    if(wave) wave.classList.remove('paused');
+  } else {
+    el.pause();
+    if(btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+    if(wave) wave.classList.add('paused');
+  }
+}
+
+function updateAudioProgress() {
+  const el = document.getElementById('audio-el');
+  const prog = document.getElementById('audio-prog');
+  const timeEl = document.getElementById('audio-time');
+  if (!el || !prog) return;
+  const pct = el.duration ? (el.currentTime / el.duration) * 100 : 0;
+  prog.style.width = pct + '%';
+  const s = Math.floor(el.currentTime);
+  if(timeEl) timeEl.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}
+
+function seekAudio(e, wrap) {
+  const el = document.getElementById('audio-el');
+  if (!el || !el.duration) return;
+  const rect = wrap.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  el.currentTime = pct * el.duration;
+}
+
+function onAudioEnd() {
+  const btn = document.getElementById('audio-play-btn');
+  const wave = document.getElementById('audio-wave');
+  if(btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+  if(wave) wave.classList.add('paused');
+}
+
+function stopCurrentAudio() {
+  const el = document.getElementById('audio-el');
+  if (el) { el.pause(); el.currentTime = 0; }
+}
+
+// ========== UTILS ==========
+function getYouTubeId(url) {
+  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : '';
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Pre-fill for demo
+document.getElementById('join-code').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/\D/g,'');
+});
+</script>
+
+
+</body></html>
